@@ -1,0 +1,9 @@
+{
+  "name": "markov_bot_js",
+  "version": "0.0.1",
+  "description": "Remake of a Telegram bot to create Markov chains.",
+  "author": "evan3334",
+  "dependencies": {
+    
+  }
+}
