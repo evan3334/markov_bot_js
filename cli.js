@@ -4,153 +4,200 @@ var util = require('util');
 //require the colors library, to make colored text in the console
 var colors = require('colors');
 
-//variable to hold the last time a message was sent.
-//used to determine whether the full date should be sent - if only the time is different and not the day then we won't waste space
-var lastTime = new Date(0);
+module.exports = function cli() {
+  //variable to hold the last time a message was sent.
+  //used to determine whether the full date should be sent - if only the time is different and not the day then we won't waste space
+  var lastTime = new Date(0);
 
-var firstTime = true;
-
-module.exports.setupInterface = function (readlineInstance) {
-  var rl;
-  if (readlineInstance) {
-    rl = readlineInstance;
-  }
-  else {
-    rl = readline.createInterface({
-      input: process.stdin,
-      output: process.stdout
-    });
-  }
-  rl.setPrompt("> ", 2);
-  rl.on('close', function () {
-    return process.exit(1);
-  });
-  rl.on("SIGINT", function () {
-    //this function does not exist if the program isn't running in a TTY
-    if (process.isTTY) {
-      rl.clearLine();
+  var firstTime = true;
+  this.setupInterface = function (readlineInstance) {
+    var rl;
+    if (readlineInstance && readlineInstance instanceof readline.Interface) {
+      rl = readlineInstance;
     }
-    rl.question("Confirm exit : ", function (answer) {
-      return (answer.match(/^o(ui)?$/i) || answer.match(/^y(es)?$/i)) ? process.exit(1) : rl.output.write("> ");
+    else {
+      rl = readline.createInterface({
+        input: process.stdin,
+        output: process.stdout
+      });
+    }
+    rl.setPrompt("> ", 2);
+    rl.on('close', function () {
+      return process.exit(1);
     });
-  });
-  rl.prompt();
-  //make sure we don't do this stuff unless this program is running in a TTY, if it's not running in TTY
-  // then that causes some serious issues (no escape sequences work and some functions do not exist)
-  if (process.isTTY) {
-    var fu = function (type, args) {
-      var t = Math.ceil((rl.line.length + 3) / process.stdout.columns);
-      var text = util.format.apply(console, args);
-      rl.output.write("\n\x1B[" + t + "A\x1B[0J");
-      rl.output.write(text + "\n");
-      rl.output.write(new Array(t).join("\n\x1B[E"));
-      rl._refreshLine();
-    };
-    rl.on('line', function () {
-      rl.prompt();
+    rl.on("SIGINT", function () {
+      //this function does not exist if the program isn't running in a TTY
+      if (process.isTTY) {
+        rl.clearLine();
+      }
+      rl.question("Confirm exit : ", function (answer) {
+        return (answer.match(/^o(ui)?$/i) || answer.match(/^y(es)?$/i)) ? process.exit(1) : rl.output.write("> ");
+      });
     });
+    rl.prompt();
+    //make sure we don't do this stuff unless this program is running in a TTY, if it's not running in TTY
+    // then that causes some serious issues (no escape sequences work and some functions do not exist)
+    if (process.isTTY) {
+      var fu = function (type, args) {
+        var t = Math.ceil((rl.line.length + 3) / process.stdout.columns);
+        var text = util.format.apply(console, args);
+        rl.output.write("\n\x1B[" + t + "A\x1B[0J");
+        rl.output.write(text + "\n");
+        rl.output.write(new Array(t).join("\n\x1B[E"));
+        rl._refreshLine();
+      };
+      rl.on('line', function () {
+        rl.prompt();
+      });
 
-    console.log = function () {
-      fu("log", arguments);
-    };
-    console.warn = function () {
-      fu("warn", arguments);
-    };
-    console.info = function () {
-      fu("info", arguments);
-    };
-    console.error = function () {
-      fu("error", arguments);
-    };
-  }
-  return rl;
-};
+      console.log = function () {
+        fu("log", arguments);
+      };
+      console.warn = function () {
+        fu("warn", arguments);
+      };
+      console.info = function () {
+        fu("info", arguments);
+      };
+      console.error = function () {
+        fu("error", arguments);
+      };
+    }
+    return rl;
+  };
 
-module.exports.setupCommandListener = function (rl, listener, deleteOld) {
-  if (firstTime) {
-    firstTime = false;
-    deleteOld = true;
-  }
-  if (deleteOld) {
-    rl.removeAllListeners('line');
-  }
-  if (typeof listener === 'function') {
-    rl.on("line", function (line) {
-      listener(line);
-      rl.prompt();
-    });
-  }
-};
+  this.setupCommandListener = function (rl, listener, deleteOld) {
+    if (firstTime) {
+      firstTime = false;
+      deleteOld = true;
+    }
+    if (deleteOld) {
+      rl.removeAllListeners('line');
+    }
+    if (typeof listener === 'function') {
+      rl.on("line", function (line) {
+        listener(line);
+        rl.prompt();
+      });
+    }
+  };
 
-//returns a formatted string for user information.
-//the returned string will be in the format "Full Name (@username) [ID: XXXXXXXXX]"
-module.exports.getUserFormat = function (user) {
-  return module.exports.getFormattedName(user).bold.green + " (".yellow + module.exports.getUsername(user) + ")".yellow + " [ID: ".bold.cyan + user.id.toString().inverse + "]".bold.cyan;
-};
+  //returns a formatted string for user information.
+  //the returned string will be in the format "Full Name (@username) [ID: XXXXXXXXX]"
+  this.getUserFormat = function (user) {
+    return this.getFormattedName(user).bold.green + " (".yellow + this.getUsername(user) + ")".yellow + " [ID: ".bold.cyan + user.id.toString().inverse + "]".bold.cyan;
+  };
 
-//returns the formatted full name of a user.
-//if the user has no last name set, then "Firstname" will be returned,
-//but if the user does have a last name set, then "Firstname Lastname" will be returned.
-module.exports.getFormattedName = function (user) {
-  if(user.first_name!==null && typeof user.first_name === 'string')
+  //returns the formatted full name of a user.
+  //if the user has no last name set, then "Firstname" will be returned,
+  //but if the user does have a last name set, then "Firstname Lastname" will be returned.
+  this.getFormattedName = function (user) {
+    if (user.first_name !== null && typeof user.first_name === 'string') {
+      return user.first_name + (user.last_name ? " " + user.last_name : "");
+    }
+    else {
+      return "";
+    }
+  };
+
+  //returns the formatted username of a user.
+  //if the user has a username, then "@username" will be returned, but if
+  //the user does not have a username, then "No username" will be returned.
+  this.getUsername = function (user) {
+    return (user.username ? "@" + user.username.bold.magenta : "No username".italic.magenta);
+  };
+
+  this.getChatFormat = function(chat)
   {
-    return user.first_name + (user.last_name ? " " + user.last_name : "");
-  }
-  else
+    var output = "";
+    if(chat.type)
+    {
+      switch(chat.type)
+      {
+        case 'private':
+          output+="PM".yellow+" ";
+          break;
+        case 'group':
+          output+=chat.title.bold.green+" (G)".yellow+" ";
+          break;
+        case 'supergroup':
+          output+=chat.title.bold.green+" (SG)".yellow+" ";
+          break;
+        case 'channel':
+          output+=chat.title.bold.green+" (CH)".yellow+" ";
+          break;
+      }
+    }
+    if(chat.id)
+    {
+      output += "[ID: ".bold.cyan+ chat.id.toString().inverse + "]".bold.cyan;
+    }
+    return output;
+  };
+
+  //object holding some preset logging levels and their formatted prefixes
+  this.levels = {
+    info: "INFO".bold.green,
+    warn: "WARN".bold.yellow,
+    err: "ERROR".bold.red
+  };
+
+  //function to output log messages to the console
+  this.log = function (msg, level) {
+    //if no level is provided
+    if ((level === null) || (level === undefined) || (level.trim() === "")) {
+      //level is automatically INFO
+      level = this.levels.info;
+    }
+    //variable to hold the current time
+    var currentTime = time();
+    //output the message, formatting the time string based on last time and current time
+    if(level === this.levels.err)
+    {
+      console.error("[" + timefmt(currentTime, lastTime) + "][" + level + "] " + msg);
+    }
+    else if(level === this.levels.warn)
+    {
+      console.warn("[" + timefmt(currentTime, lastTime) + "][" + level + "] " + msg);
+    }
+    else
+    {
+      console.log("[" + timefmt(currentTime, lastTime) + "][" + level + "] " + msg);
+    }
+    //assign the current time to the last time; it will be compared the next time a log message is sent
+    lastTime = currentTime;
+  };
+
+  this.err = function(msg)
   {
-    return "";
-  }
-};
+    this.log(msg, this.levels.err);
+  };
 
-//returns the formatted username of a user.
-//if the user has a username, then "@username" will be returned, but if
-//the user does not have a username, then "No username" will be returned.
-module.exports.getUsername = function (user) {
-  return (user.username ? "@" + user.username.bold.magenta : "No username".italic.magenta);
-};
+  this.warn = function(msg)
+  {
+    this.log(msg, this.levels.warn);
+  };
 
-//object holding some preset logging levels and their formatted prefixes
-module.exports.levels = {
-  info: "INFO".bold.green,
-  warn: "WARN".bold.yellow,
-  err: "ERROR".bold.red
+  //function to exit and display a log message based on the status code
+  this.exit = function (code) {
+    //variable to hold the log level
+    var level = "";
+    //if the exit status code is greater than zero (error occurred)
+    if (code > 0) {
+      //set the log level to "ERROR"
+      level = this.levels.err;
+    }
+    //otherwise
+    else {
+      //set the log level to "INFO"
+      level = this.levels.info;
+    }
+    //output the log message, including the status code
+    this.log("Exiting... (Code: " + code + ")", level);
+    //actually exit the program, returning the status code
+    process.exit(code);
+  };
 };
-
-//function to output log messages to the console
-module.exports.log = function (msg, level) {
-  //if no level is provided
-  if ((level === null) || (level === undefined) || (level.trim() === "")) {
-    //level is automatically INFO
-    level = module.exports.levels.info;
-  }
-  //variable to hold the current time
-  var currentTime = time();
-  //output the message, formatting the time string based on last time and current time
-  console.log("[" + timefmt(currentTime, lastTime) + "][" + level + "] " + msg);
-  //assign the current time to the last time; it will be compared the next time a log message is sent
-  lastTime = currentTime;
-};
-
-//function to exit and display a log message based on the status code
-module.exports.exit = function (code) {
-  //variable to hold the log level
-  var level = "";
-  //if the exit status code is greater than zero (error occurred)
-  if (code > 0) {
-    //set the log level to "ERROR"
-    level = module.exports.levels.err;
-  }
-  //otherwise
-  else {
-    //set the log level to "INFO"
-    level = module.exports.levels.info;
-  }
-  //output the log message, including the status code
-  module.exports.log("Exiting... (Code: " + code + ")", level);
-  //actually exit the program, returning the status code
-  process.exit(code);
-};
-
 
 //gets the current time as a Date object.
 function time() {
