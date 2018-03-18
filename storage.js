@@ -5,7 +5,7 @@ var Promise = require('promise');
 module.exports = function storage() {
 
   var currentDirectory = process.cwd();
-  var dataDirectory = currentDirectory + "markov2/";
+  var dataDirectory = currentDirectory + "/markov2/";
 
   function checkDataDirectory() {
     return new Promise(function (fulfill, reject) {
