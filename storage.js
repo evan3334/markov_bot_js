@@ -20,7 +20,7 @@ module.exports = function storage() {
           }
           else {
             //let's make sure it's a directory
-            fs.readdir(dataDirectory, null, function (items, err) {
+            fs.readdir(dataDirectory, null, function (err,files) {
               if (err) {
                 //not a directory (or some other error)
                 reject(err);
@@ -64,7 +64,7 @@ module.exports = function storage() {
   }
 
   function checkChatFilePerms(chat_id) {
-    if (chat_id && typeof chat_id === "string") {
+    if (chat_id) {
       return new Promise(function (fulfill, reject) {
         fs.access(dataDirectory + chat_id + ".json",
           fs.constants.F_OK | fs.constants.W_OK | fs.constants.R_OK,
@@ -86,7 +86,7 @@ module.exports = function storage() {
       createDataDirectory().then(function () {
         checkChatFilePerms(chat_id).then(fulfill).catch(function (err) {
           if (err.code === "ENOENT") {
-            fs.writeFile(path, JSON.stringify({}, null, 2), 'utf8', function (err) {
+            fs.writeFile(path, JSON.stringify({words:[]}, null, 2), 'utf8', function (err) {
               if (err) {
                 reject(err);
               }

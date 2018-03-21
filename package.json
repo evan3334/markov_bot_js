@@ -7,6 +7,7 @@
     "colors": "latest",
     "node-telegram-bot-api": "^0.29.0",
     "promise": "^8.0.1",
-    "readline":"^1.3.0"
+    "readline":"^1.3.0",
+    "unicode":"^10.0.0"
   }
 }
