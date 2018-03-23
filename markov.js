@@ -102,6 +102,10 @@ module.exports.Chain = function Chain(object) {
         words[i] = word;
         this.addWord(word);
       }
+
+      //we should now add an empty word ("") for the last word in the message.
+      //this should be used to represent the end of the message, and allows us to introduce the possibility of a chance that the message might end after a specific word.
+      words.push("");
       for (i = 0; i < words.length - 1; i++) {
         word = words[i];
         var nextword = words[i + 1];
@@ -116,6 +120,7 @@ module.exports.Chain = function Chain(object) {
           chain.probabilities[word][nextword] = nextword_prob;
         }
       }
+
     }
   };
 
@@ -146,6 +151,13 @@ module.exports.Chain = function Chain(object) {
     if (chain.probabilities[word]) {
       //return the keys of probabilities for the word, this will simply return an array of all the words following this word as strings
       return Object.keys(chain.probabilities[word]);
+    }
+  };
+
+  this.getUsageCount = function getUsageCount(word,nextword){
+    //make sure that word is contained in the list and that nextword has followed word before
+    if (chain.probabilities[word] && chain.probabilities[word][nextword]) {
+      return chain.probabilities[word][nextword];
     }
   };
 
@@ -202,5 +214,66 @@ module.exports.Chain = function Chain(object) {
     }
   }
 
+  this.generateMessage = function generateMessage(maxlength){
+    var getProbability = this.getProbability;
+    var getWordsFollowing = this.getWordsFollowing;
+    var getUsageCount = this.getUsageCount;
+
+    function randInt(a,b){
+      return Math.floor(Math.random()*b)+a;
+    }
+
+    function chooseNextWord(word){
+      //to be able to choose words based on a weighted probability we can't simply choose a random word.
+      //instead, we're making a "bag"-like model, where words are placed into the "bag" multiple times depending on their usages.
+      //words that are in the "bag" more times than others will have a greater chance of being picked.
+      var bag = [];
+      //variable to store all the words that have followed this word
+      var following = getWordsFollowing(word);
+      //if no words have followed this word, return ""
+      if(following.length === 0){
+        return "";
+      }
+      //for every word that has followed this word
+      for(var i = 0; i<following.length; i++){
+        //store it in a variable
+        var nextword = following[i];
+        //get how many times it has been used after word
+        var usages = getUsageCount(word,nextword);
+        //for every one of these usages, put a copy of nextword into the "bag"
+        for(var j = 0; j<usages; j++){
+          bag.push(nextword);
+        }
+      }
+      //we're done placing words into the bag, so let's pick a random one out of the bag
+      var index = randInt(0,bag.length-1); //arrays are zero indexed, so our limits are 0 and 1 fewer than the number of items in the bag
+      //this is the word we have chosen. Let's return it.
+      return bag[index];
+    }
+
+    var message = '';
+    var words = this.getWords();
+    //if we don't have any words in the chain, don't do this generation process and instead warn the users
+    if(this.isEmpty()){
+      message = "[__Chain is empty!__ Start sending some messages!]";
+    }
+    var i = 1;
+    var currentword = words[randInt(0,words.length)];
+    message += currentword + " ";
+    while(i<maxlength){
+      currentword = chooseNextWord(currentword);
+      //if an empty word has been chosen, this means that the message ends after this word.
+      if(currentword===""){
+        break;
+      }
+      //otherwise, we should append this word to the message.
+      else{
+        message += currentword + " ";
+      }
+    }
+    //we have broken out of the loop, so we've either hit the maximum message length or an end-of-message condition has been randomly chosen.
+    //we should now return the finished message, albeit with extra whitespace removed.
+    return message.trim();
+  }
 
 };
