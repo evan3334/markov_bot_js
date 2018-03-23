@@ -18,6 +18,7 @@ module.exports = function telegram(cliInstance) {
   var bot = {};
   var initialized = false;
   var me = {};
+  var messageEvents = [];
 
   var commands = [];
 
@@ -32,7 +33,7 @@ module.exports = function telegram(cliInstance) {
           me = info;
           initialized = true;
 
-          bot.on('message',processCommands);
+          bot.on('message',onMessage);
 
           bot.startPolling();
 
@@ -57,7 +58,12 @@ module.exports = function telegram(cliInstance) {
   };
 
   this.on = function(event, handler){
-    return bot.on(event, handler);
+    if(event === "message"){
+      messageEvents.push(handler);
+    }
+    else {
+      return bot.on(event, handler);
+    }
   };
 
   this.addCommandListener = function(command, listener){
@@ -77,6 +83,15 @@ module.exports = function telegram(cliInstance) {
       throw new Error("command must be a valid string");
     }
   };
+
+  function onMessage(msg){
+    if(!processCommands(msg)) {
+      for (i in messageEvents) {
+        var event = messageEvents[i];
+        event(msg);
+      }
+    }
+  }
 
   this.removeCommandListener = function(command)
   {
@@ -104,8 +119,10 @@ module.exports = function telegram(cliInstance) {
           var args = input.split(' ');
           args.splice(0,1);
           currentCommand.listener(input, args, bot);
+          return true;
         }
       }
     }
+    return false;
   }
 };
