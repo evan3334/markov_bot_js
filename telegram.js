@@ -1,17 +1,15 @@
 var promise = require('promise');
-process.env.NTBA_FIX_319=true;
+process.env.NTBA_FIX_319 = true;
 var TelegramBot = require('node-telegram-bot-api');
 TelegramBot.Promise = promise;
 var cliJS = require('./cli.js');
 
 module.exports = function telegram(cliInstance) {
   var cli;
-  if(!cliInstance || !(cliInstance instanceof cliJS))
-  {
+  if (!cliInstance || !(cliInstance instanceof cliJS)) {
     throw new Error('cliInstance must be a valid instance of cli.js');
   }
-  else
-  {
+  else {
     cli = cliInstance;
   }
 
@@ -23,7 +21,7 @@ module.exports = function telegram(cliInstance) {
   var commands = [];
 
   this.initTelegram = function initTelegram(token, options) {
-    return new promise(function(fulfill, reject) {
+    return new promise(function (fulfill, reject) {
       if (options === null || typeof options !== 'object') {
         options = {};
       }
@@ -33,7 +31,7 @@ module.exports = function telegram(cliInstance) {
           me = info;
           initialized = true;
 
-          bot.on('message',onMessage);
+          bot.on('message', onMessage);
 
           bot.startPolling();
 
@@ -57,8 +55,8 @@ module.exports = function telegram(cliInstance) {
     }
   };
 
-  this.on = function(event, handler){
-    if(event === "message"){
+  this.on = function (event, handler) {
+    if (event === "message") {
       messageEvents.push(handler);
     }
     else {
@@ -66,26 +64,22 @@ module.exports = function telegram(cliInstance) {
     }
   };
 
-  this.addCommandListener = function(command, listener){
-    if(command && typeof command === 'string')
-    {
-      if(listener && typeof listener === "function")
-      {
-        commands.push({command:command.toLowerCase(),listener:listener});
+  this.addCommandListener = function (command, listener) {
+    if (command && typeof command === 'string') {
+      if (listener && typeof listener === "function") {
+        commands.push({command: command.toLowerCase(), listener: listener});
       }
-      else
-      {
+      else {
         throw new Error("listener must be a valid function with params (message, args, bot)");
       }
     }
-    else
-    {
+    else {
       throw new Error("command must be a valid string");
     }
   };
 
-  function onMessage(msg){
-    if(!processCommands(msg)) {
+  function onMessage(msg) {
+    if (!processCommands(msg)) {
       for (i in messageEvents) {
         var event = messageEvents[i];
         event(msg);
@@ -93,15 +87,12 @@ module.exports = function telegram(cliInstance) {
     }
   }
 
-  this.removeCommandListener = function(command)
-  {
+  this.removeCommandListener = function (command) {
     command = command.toLowerCase();
-    for(var i=0;i<commands.length;i++)
-    {
+    for (var i = 0; i < commands.length; i++) {
       var current = commands[i];
-      if(current.command === command)
-      {
-        commands.splice(i,1);
+      if (current.command === command) {
+        commands.splice(i, 1);
         return true;
       }
     }
@@ -109,15 +100,24 @@ module.exports = function telegram(cliInstance) {
   };
 
   function processCommands(input) {
+    var namePattern = "\\/.*@([a-z,A-Z,\\S]*)";
+    var nameRegex = new RegExp(namePattern);
+    if (nameRegex.test(input)) {
+      //this is a command with a bot name on it
+      var results = nameRegex.exec(input);
+      if (!(results[1] && me.username && results[1].toLowerCase() === me.username.toLowerCase())) {
+        //it's not our name. return true so that nothing else processes this message.
+        return true;
+      }
+    }
     for (var i = 0; i < commands.length; i++) {
       var currentCommand = commands[i];
       var pattern = "\\/(?:" + currentCommand.command + ")|(?:(" + currentCommand.command + ")@)";
       var regex = new RegExp(pattern);
       if (regex.test(input)) {
-        if (currentCommand.listener && typeof currentCommand.listener === "function")
-        {
+        if (currentCommand.listener && typeof currentCommand.listener === "function") {
           var args = input.split(' ');
-          args.splice(0,1);
+          args.splice(0, 1);
           currentCommand.listener(input, args, bot);
           return true;
         }
