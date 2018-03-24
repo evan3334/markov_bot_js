@@ -102,7 +102,7 @@ module.exports = function telegram(cliInstance) {
     if (!processCommands(msg)) {
       for (var i in messageEvents) {
         var event = messageEvents[i];
-        event(msg);
+        event(msg,bot);
       }
     }
   }

@@ -48,7 +48,8 @@ tg.initTelegram(token)
   .then(function () {
     cli.log(JSON.stringify(tg.getBotInformation(), null, 2));
 
-    tg.on('message', function (message) {
+    tg.on('message', function (message,bot) {
+      cli.log("chat id: "+message.chat.id+" from: "+message.migrate_from_chat_id+" To: "+message.migrate_to_chat_id);
       if (message.text) {
         cli.log("Message from " + cli.getUserFormat(message.from) + " in " + cli.getChatFormat(message.chat) + ": " + message.text);
         markov.getChainForChat(message.chat.id)
@@ -63,6 +64,17 @@ tg.initTelegram(token)
           .catch(function (err) {
             cli.err(err);
           });
+      }
+      else if(message.migrate_to_chat_id) {
+        markov.getChainForChat(message.chat.id)
+          .then(function(chain){
+            markov.saveChainForChat(message.migrate_to_chat_id,chain)
+              .then(function () {
+                bot.sendMessage(message.migrate_to_chat_id,"_Supergroup migration successfully completed._",{parse_mode:"Markdown"})
+              })
+              .catch(cli.err);
+          })
+          .catch(cli.err);
       }
     });
   })
