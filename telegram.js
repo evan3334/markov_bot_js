@@ -64,9 +64,12 @@ module.exports = function telegram(cliInstance) {
     }
   };
 
-  this.isAdmin = function isAdmin(user_id, chat_id) {
+  this.isAdmin = function isAdmin(user_id, chat) {
     return new Promise(function (fulfill, reject) {
-      bot.getChatAdministrators(chat_id)
+      if(chat.type==="private"){
+        fulfill(chat.id===user_id);
+      }
+      bot.getChatAdministrators(chat.id)
         .then(function (admins) {
           var found = false;
           for (var i in admins) {
@@ -130,9 +133,8 @@ module.exports = function telegram(cliInstance) {
     }
     for (var i = 0; i < commands.length; i++) {
       var currentCommand = commands[i];
-      var pattern = "\\/(?:" + currentCommand.command + ")|(?:(" + currentCommand.command + ")@)";
-      var regex = new RegExp(pattern);
-      if (regex.test(messageText)) {
+      var firstPart = messageText.split(" ")[0].split("@")[0];
+      if (firstPart==="/"+currentCommand.command) {
         if (currentCommand.listener && typeof currentCommand.listener === "function") {
           var args = messageText.split(' ');
           args.splice(0, 1);

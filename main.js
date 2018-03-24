@@ -28,20 +28,21 @@ tg.addCommandListener("markov", function (message, args, bot) {
     });
 });
 tg.addCommandListener("markovclear", function (message, args, bot) {
-  tg.isAdmin(message.from.id,message.chat.id)
+  tg.isAdmin(message.from.id,message.chat)
     .then(function(isAdmin){
       if (isAdmin) {
         var newchain = new Chain();
-        markov.saveChainForChat(message.chat.id,newchain);
-        bot.sendMessage(message.chat.id, "The chain for this chat was erased.");
+        markov.saveChainForChat(message.chat.id,newchain)
+          .then(function(){
+            bot.sendMessage(message.chat.id, "The chain for this chat was erased.");
+          })
+          .catch(cli.err);
       }
       else {
         bot.sendMessage(message.chat.id, "You have to be an administrator to use that!");
       }
     })
-    .catch(function (err) {
-      cli.err(err);
-    })
+    .catch(cli.err);
 });
 tg.initTelegram(token)
   .then(function () {
