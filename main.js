@@ -49,7 +49,6 @@ tg.initTelegram(token)
     cli.log(JSON.stringify(tg.getBotInformation(), null, 2));
 
     tg.on('message', function (message,bot) {
-      cli.log("chat id: "+message.chat.id+" from: "+message.migrate_from_chat_id+" To: "+message.migrate_to_chat_id);
       if (message.text) {
         cli.log("Message from " + cli.getUserFormat(message.from) + " in " + cli.getChatFormat(message.chat) + ": " + message.text);
         markov.getChainForChat(message.chat.id)
