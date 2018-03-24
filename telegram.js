@@ -121,6 +121,10 @@ module.exports = function telegram(cliInstance) {
 
   function processCommands(input) {
     var messageText = input.text;
+    //if there isn't any message text, it won't be processable and we should ignore it.
+    if(!messageText){
+      return false;
+    }
     var namePattern = "\\/.*@([a-z,A-Z,\\S]*)";
     var nameRegex = new RegExp(namePattern);
     if (nameRegex.test(messageText)) {
