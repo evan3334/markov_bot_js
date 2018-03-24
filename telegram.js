@@ -64,6 +64,23 @@ module.exports = function telegram(cliInstance) {
     }
   };
 
+  this.isAdmin = function isAdmin(user_id, chat_id) {
+    return new Promise(function (fulfill, reject) {
+      bot.getChatAdministrators(chat_id)
+        .then(function (admins) {
+          var found = false;
+          for (var i in admins) {
+            var current = admins[i];
+            if (current.user.id === user_id) {
+              found = true;
+              break;
+            }
+          }
+          fulfill(found);
+        }).catch(reject);
+    });
+  };
+
   this.addCommandListener = function (command, listener) {
     if (command && typeof command === 'string') {
       if (listener && typeof listener === "function") {
@@ -80,7 +97,7 @@ module.exports = function telegram(cliInstance) {
 
   function onMessage(msg) {
     if (!processCommands(msg)) {
-      for (i in messageEvents) {
+      for (var i in messageEvents) {
         var event = messageEvents[i];
         event(msg);
       }
@@ -100,11 +117,12 @@ module.exports = function telegram(cliInstance) {
   };
 
   function processCommands(input) {
+    var messageText = input.text;
     var namePattern = "\\/.*@([a-z,A-Z,\\S]*)";
     var nameRegex = new RegExp(namePattern);
-    if (nameRegex.test(input)) {
+    if (nameRegex.test(messageText)) {
       //this is a command with a bot name on it
-      var results = nameRegex.exec(input);
+      var results = nameRegex.exec(messageText);
       if (!(results[1] && me.username && results[1].toLowerCase() === me.username.toLowerCase())) {
         //it's not our name. return true so that nothing else processes this message.
         return true;
@@ -114,9 +132,9 @@ module.exports = function telegram(cliInstance) {
       var currentCommand = commands[i];
       var pattern = "\\/(?:" + currentCommand.command + ")|(?:(" + currentCommand.command + ")@)";
       var regex = new RegExp(pattern);
-      if (regex.test(input)) {
+      if (regex.test(messageText)) {
         if (currentCommand.listener && typeof currentCommand.listener === "function") {
-          var args = input.split(' ');
+          var args = messageText.split(' ');
           args.splice(0, 1);
           currentCommand.listener(input, args, bot);
           return true;
