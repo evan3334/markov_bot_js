@@ -154,7 +154,7 @@ module.exports.Chain = function Chain(object) {
     }
   };
 
-  this.getUsageCount = function getUsageCount(word,nextword){
+  this.getUsageCount = function getUsageCount(word, nextword) {
     //make sure that word is contained in the list and that nextword has followed word before
     if (chain.probabilities[word] && chain.probabilities[word][nextword]) {
       return chain.probabilities[word][nextword];
@@ -214,16 +214,16 @@ module.exports.Chain = function Chain(object) {
     }
   }
 
-  this.generateMessage = function generateMessage(maxlength){
+  this.generateMessage = function generateMessage(maxlength) {
     var getProbability = this.getProbability;
     var getWordsFollowing = this.getWordsFollowing;
     var getUsageCount = this.getUsageCount;
 
-    function randInt(a,b){
-      return Math.floor(Math.random()*b)+a;
+    function randInt(a, b) {
+      return Math.floor(Math.random() * b) + a;
     }
 
-    function chooseNextWord(word){
+    function chooseNextWord(word) {
       //to be able to choose words based on a weighted probability we can't simply choose a random word.
       //instead, we're making a "bag"-like model, where words are placed into the "bag" multiple times depending on their usages.
       //words that are in the "bag" more times than others will have a greater chance of being picked.
@@ -231,22 +231,22 @@ module.exports.Chain = function Chain(object) {
       //variable to store all the words that have followed this word
       var following = getWordsFollowing(word);
       //if no words have followed this word, return ""
-      if(following.length === 0){
+      if (!following || following.length === 0) {
         return "";
       }
       //for every word that has followed this word
-      for(var i = 0; i<following.length; i++){
+      for (var i = 0; i < following.length; i++) {
         //store it in a variable
         var nextword = following[i];
         //get how many times it has been used after word
-        var usages = getUsageCount(word,nextword);
+        var usages = getUsageCount(word, nextword);
         //for every one of these usages, put a copy of nextword into the "bag"
-        for(var j = 0; j<usages; j++){
+        for (var j = 0; j < usages; j++) {
           bag.push(nextword);
         }
       }
       //we're done placing words into the bag, so let's pick a random one out of the bag
-      var index = randInt(0,bag.length-1); //arrays are zero indexed, so our limits are 0 and 1 fewer than the number of items in the bag
+      var index = randInt(0, bag.length - 1); //arrays are zero indexed, so our limits are 0 and 1 fewer than the number of items in the bag
       //this is the word we have chosen. Let's return it.
       return bag[index];
     }
@@ -254,20 +254,32 @@ module.exports.Chain = function Chain(object) {
     var message = '';
     var words = this.getWords();
     //if we don't have any words in the chain, don't do this generation process and instead warn the users
-    if(this.isEmpty()){
-      message = "[__Chain is empty!__ Start sending some messages!]";
+    if (this.isEmpty()) {
+      message = "_Chain is empty! Start sending some messages!_";
+      return message;
     }
     var i = 1;
-    var currentword = words[randInt(0,words.length)];
-    message += currentword + " ";
-    while(i<maxlength){
-      currentword = chooseNextWord(currentword);
+    var randword = true;
+    while (i < maxlength) {
+      if (randword) {
+        var currentword = words[randInt(0, words.length)];
+        randword = false;
+      }
+      else {
+        currentword = chooseNextWord(currentword);
+      }
       //if an empty word has been chosen, this means that the message ends after this word.
-      if(currentword===""){
-        break;
+      //since this seems to generate shorter messages, I've changed it to be a 50/50 chance that the message ends.
+      if (currentword === "") {
+        if (randInt(1, 10) > 5) {
+          randword = true;
+        }
+        else {
+          break;
+        }
       }
       //otherwise, we should append this word to the message.
-      else{
+      else {
         message += currentword + " ";
       }
     }
