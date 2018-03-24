@@ -21,7 +21,7 @@ tg.addCommandListener("markov", function (message, args, bot) {
   markov.getChainForChat(message.chat.id)
     .then(function (chain) {
       msg = chain.generateMessage(100);
-      bot.sendMessage(message.chat.id, msg, {parse_mode: "markdown"});
+      bot.sendMessage(message.chat.id, msg, {parse_mode: "Markdown"});
     })
     .catch(function (err) {
       cli.err(err);
