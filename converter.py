@@ -11,6 +11,7 @@ if len(sys.argv) < 2:
   sys.exit(1)
 
 filename = sys.argv[1]
+print("Attempting to process "+filename)
 parent_path = re.compile(".*\/").search(filename)
 if parent_path!=None:
   parent_path = parent_path.group(0)
@@ -37,7 +38,11 @@ o = pickle.load(f)
 newobj = {}
 
 #First, let's get the word list
-words = o[""]
+try:
+  words = o[""]
+except KeyError:
+  print("No words to process.")
+  sys.exit(0)
 #Make sure there aren't any blank strings in there
 while "" in words:
   words.remove("")
@@ -54,7 +59,11 @@ for word in words:
   sys.stdout.write("\rProcessing word "+str(i)+" of "+str(len(words)))
   newobj["probabilities"][word] = {}
   has_empty = False
-  for follow in o[key]:
+  try:
+    following = o[key]
+  except KeyError:
+    following = [""]
+  for follow in following:
     #I've notice sometimes the old database format stores empty strings more than once. This makes sure that only one empty string is added to a word.
     if follow=="":
       if has_empty:
