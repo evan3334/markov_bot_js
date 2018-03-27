@@ -54,6 +54,10 @@ module.exports = function storage() {
             }
           })
         }
+        else if(err.code === "EEXIST"){
+          //directory already exists, we're good
+          fulfill();
+        }
         else {
           //something else went wrong that we didn't anticipate. reject the promise.
           reject(err);
