@@ -24,7 +24,7 @@ tg.addCommandListener("markov", function (message, args, bot) {
       bot.sendMessage(message.chat.id, msg, {parse_mode: "Markdown"});
     })
     .catch(function (err) {
-      cli.err(err);
+      cli.err(err.stack);
     });
 });
 tg.addCommandListener("markovclear", function (message, args, bot) {
@@ -57,11 +57,11 @@ tg.initTelegram(token)
             markov.saveChainForChat(message.chat.id, chain)
               .catch(function (err) {
                 cli.err("An error occurred saving chain for " + message.chat.id);
-                cli.err(err);
+                cli.err(err.stack);
               });
           })
           .catch(function (err) {
-            cli.err(err);
+            cli.err(err.stack);
           });
       }
       else if(message.migrate_to_chat_id) {
