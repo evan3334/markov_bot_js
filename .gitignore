@@ -3,3 +3,5 @@ bot_token
 testbot_token
 node_modules
 markov2
+start_test.sh
+start.sh
