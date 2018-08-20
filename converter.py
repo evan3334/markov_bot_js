@@ -18,7 +18,7 @@ if parent_path!=None:
 else:
   parent_path = ""
 chat_id = re.compile("chat_[^/]*$").search(filename).group(0)[5:-4]
-newfilename = parent_path+chat_id+".json"
+newfilename = parent_path+"chat_"+chat_id+".json"
 try:
   f = open(filename,'rb')
 except OSError as err:
@@ -64,7 +64,7 @@ for word in words:
   except KeyError:
     following = [""]
   for follow in following:
-    #I've notice sometimes the old database format stores empty strings more than once. This makes sure that only one empty string is added to a word.
+    #I've noticed sometimes the old database format stores empty strings more than once. This makes sure that only one empty string is added to a word.
     if follow=="":
       if has_empty:
         continue
