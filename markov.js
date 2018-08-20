@@ -1,5 +1,6 @@
-var Storage = require('./storage.js');
-var Promise = require('promise');
+let Storage = require('./storage.js');
+let Promise = require('promise');
+let cliJS = require('./cli.js');
 
 //maximum length for a word, we don't want someone to mess us up by giving us a million-letter word or something
 const MAX_WORD_LENGTH = 50;
@@ -7,42 +8,57 @@ const MAX_WORD_LENGTH = 50;
 const ALLOWABLE_UNICODE_CATEGORIES = ["Ll", "Lm", "Lo", "Lt", "Lu", "Nd", "Nl", "No", "Pc", "Pd", "Pe", "Pf", "Pi", "Po", "Ps"];
 
 //will be filled with Unicode category databases
-var categories = {};
+let categories = {};
 
 //get the category databases created by the unicode module
-for (var i = 0; i < ALLOWABLE_UNICODE_CATEGORIES.length; i++) {
-  var category = ALLOWABLE_UNICODE_CATEGORIES[i];
+for (let i = 0; i < ALLOWABLE_UNICODE_CATEGORIES.length; i++) {
+  let category = ALLOWABLE_UNICODE_CATEGORIES[i];
   categories[category] = require('unicode/category/' + category);
 }
 
-module.exports = function Markov() {
-  //create a storage module instance for our use
-  var storage = new Storage();
+module.exports = function Markov(cliInstance) {
 
+  var cli;
+  if (!cliInstance || !(cliInstance instanceof cliJS)) {
+    throw new Error('cliInstance must be a valid instance of cli.js');
+  }
+  else {
+    cli = cliInstance;
+  }
+
+  //create a storage module instance for our use
+  let storage = new Storage(cli);
+
+  this._getStorage = function _getStorage(){
+    return storage;
+  };
+
+  //TODO make async instead of explicitly returning Promise
   //will look up, load, and then return a Chain given a chat_id.
   this.getChainForChat = function getChainForChat(chat_id) {
     return new Promise(function (fulfill, reject) {
       //read the chat file for the ID
-      storage.readChatFile(chat_id).then(function (contents) {
+      storage.readChat(chat_id).then(function (contents) {
         //create a chain based on the contents
-        var c = new module.exports.Chain(contents);
+        let c = new module.exports.Chain(contents);
         //return said chain. if the contents were invalid at all, c will simply be a blank chain.
         fulfill(c);
       }).catch(reject); //if any error is encountered, reject the promise that this function returns
     });
   };
 
+  //TODO make async instead of explicitly returning Promise
   //writes a chain for a chat to a file given the chat id and chain
   this.saveChainForChat = function saveChainForChat(chat_id, chain) {
     return new Promise(function (fulfill, reject) {
       //write the chain object to a file
-      storage.writeChatFile(chat_id, chain.getChain()).then(fulfill).catch(reject);
+      storage.saveChat(chat_id, chain.getChain()).then(fulfill).catch(reject);
     })
   }
 };
 
 module.exports.Chain = function Chain(object) {
-  var chain = {};
+  let chain = {};
 
   chain.words = [];
   chain.probabilities = {};
@@ -71,7 +87,7 @@ module.exports.Chain = function Chain(object) {
     //get the character code, stuff is stored in the unicode databases based on character code
     code = char.charCodeAt(0);
     //check through all the allowable unicode categories
-    for (var i = 0; i < ALLOWABLE_UNICODE_CATEGORIES.length; i++) {
+    for (let i = 0; i < ALLOWABLE_UNICODE_CATEGORIES.length; i++) {
       //if the character code is in the current category, return true. the character's allowable.
       if (categories[ALLOWABLE_UNICODE_CATEGORIES[i]][code]) {
         return true;
@@ -82,9 +98,9 @@ module.exports.Chain = function Chain(object) {
   }
 
   function cleanWord(word) {
-    var chars = word.split('');
-    var output = '';
-    for (var i = 0; i < chars.length; i++) {
+    let chars = word.split('');
+    let output = '';
+    for (let i = 0; i < chars.length; i++) {
       if (allowable(chars[i])) {
         output += chars[i];
       }
@@ -94,9 +110,9 @@ module.exports.Chain = function Chain(object) {
 
   this.addMessage = function addMessage(message) {
     if (message && typeof message === 'string') {
-      var words = message.split(" ");
-      for (var i = 0; i < words.length; i++) {
-        var word = words[i];
+      let words = message.split(" ");
+      for (let i = 0; i < words.length; i++) {
+        let word = words[i];
         word = word.substring(0, MAX_WORD_LENGTH);
         word = cleanWord(word);
         words[i] = word;
@@ -108,9 +124,9 @@ module.exports.Chain = function Chain(object) {
       words.push("");
       for (i = 0; i < words.length - 1; i++) {
         word = words[i];
-        var nextword = words[i + 1];
+        let nextword = words[i + 1];
         if (chain.probabilities[word]) {
-          var nextword_prob = chain.probabilities[word][nextword];
+          let nextword_prob = chain.probabilities[word][nextword];
           if (nextword_prob) {
             nextword_prob++;
           }
@@ -127,11 +143,11 @@ module.exports.Chain = function Chain(object) {
   this.getProbability = function getProbability(firstword, nextword) {
     //make sure that nextword has actually followed firstword
     if (this.getWordsFollowing(firstword).includes(nextword)) {
-      var total = getTotalProb(firstword);
+      let total = getTotalProb(firstword);
       //make sure that the total usages of words after this word is non-zero (to prevent a division by zero)
       if (total !== 0) {
         //get the usages of nextword after firstword, and divide by the total usages to get the probability as a decimal
-        var prob = chain.probabilities[firstword][nextword];
+        let prob = chain.probabilities[firstword][nextword];
         //return this number
         return prob / total;
       }
@@ -162,16 +178,16 @@ module.exports.Chain = function Chain(object) {
   };
 
   this.getWords = function getWords() {
-    //just spit out the internal chain variable's words array
+    //just spit out the internal chain letiable's words array
     return chain.words;
   };
 
   function getTotalProb(word) {
-    var probs = chain.probabilities[word];
-    var total = 0;
+    let probs = chain.probabilities[word];
+    let total = 0;
     if (probs) {
-      var words = Object.keys(probs);
-      for (var i = 0; i < words.length; i++) {
+      let words = Object.keys(probs);
+      for (let i = 0; i < words.length; i++) {
         total += probs[words[i]];
       }
     }
@@ -185,8 +201,8 @@ module.exports.Chain = function Chain(object) {
 
 
   function validateObject(object) {
-    //set a variable that we may later change to 'false' if something wrong is detected
-    var valid = true;
+    //set a letiable that we may later change to 'false' if something wrong is detected
+    let valid = true;
     //make sure what we've been passed is actually an object
     if (object && typeof object === 'object') {
       //make sure it has a words property and that property is an array
@@ -194,18 +210,18 @@ module.exports.Chain = function Chain(object) {
         //make sure if has a probabilities property and that property is another object
         if (object.probabilities && typeof object.probabilities === 'object') {
           //check through each of the words in the probabilities object
-          var words = Object.keys(object.probabilities);
-          for (var i = 0; i < words.length; i++) {
+          let words = Object.keys(object.probabilities);
+          for (let i = 0; i < words.length; i++) {
             //for each of the words, check through each of the words following it and make sure their values are numbers (usage count)
-            var probs = Object.keys(object.probabilities[words[i]]);
-            for (var j = 0; j < probs.length; j++) {
+            let probs = Object.keys(object.probabilities[words[i]]);
+            for (let j = 0; j < probs.length; j++) {
               //if any of these values aren't numbers, set the valid flag to false
               if (!(object.probabilities[words[i]][probs[j]] && typeof object.probabilities[words[i]][probs[j]] === 'number')) {
                 valid = false;
               }
             }
           }
-          //after all this, if valid is still set, everything is ok. set the object to this Chain's internal chain variable.
+          //after all this, if valid is still set, everything is ok. set the object to this Chain's internal chain letiable.
           if (valid) {
             chain = object;
           }
@@ -215,9 +231,9 @@ module.exports.Chain = function Chain(object) {
   }
 
   this.generateMessage = function generateMessage(maxlength) {
-    var getProbability = this.getProbability;
-    var getWordsFollowing = this.getWordsFollowing;
-    var getUsageCount = this.getUsageCount;
+    let getProbability = this.getProbability;
+    let getWordsFollowing = this.getWordsFollowing;
+    let getUsageCount = this.getUsageCount;
 
     function randInt(a, b) {
       return Math.floor(Math.random() * b) + a;
@@ -227,42 +243,43 @@ module.exports.Chain = function Chain(object) {
       //to be able to choose words based on a weighted probability we can't simply choose a random word.
       //instead, we're making a "bag"-like model, where words are placed into the "bag" multiple times depending on their usages.
       //words that are in the "bag" more times than others will have a greater chance of being picked.
-      var bag = [];
-      //variable to store all the words that have followed this word
-      var following = getWordsFollowing(word);
+      let bag = [];
+      //letiable to store all the words that have followed this word
+      let following = getWordsFollowing(word);
       //if no words have followed this word, return ""
       if (!following || following.length === 0) {
         return "";
       }
       //for every word that has followed this word
-      for (var i = 0; i < following.length; i++) {
-        //store it in a variable
-        var nextword = following[i];
+      for (let i = 0; i < following.length; i++) {
+        //store it in a letiable
+        let nextword = following[i];
         //get how many times it has been used after word
-        var usages = getUsageCount(word, nextword);
+        let usages = getUsageCount(word, nextword);
         //for every one of these usages, put a copy of nextword into the "bag"
-        for (var j = 0; j < usages; j++) {
+        for (let j = 0; j < usages; j++) {
           bag.push(nextword);
         }
       }
       //we're done placing words into the bag, so let's pick a random one out of the bag
-      var index = randInt(0, bag.length - 1); //arrays are zero indexed, so our limits are 0 and 1 fewer than the number of items in the bag
+      let index = randInt(0, bag.length - 1); //arrays are zero indexed, so our limits are 0 and 1 fewer than the number of items in the bag
       //this is the word we have chosen. Let's return it.
       return bag[index];
     }
 
-    var message = '';
-    var words = this.getWords();
+    let message = '';
+    let words = this.getWords();
     //if we don't have any words in the chain, don't do this generation process and instead warn the users
     if (this.isEmpty()) {
       message = "_Chain is empty! Start sending some messages!_";
       return message;
     }
-    var i = 1;
-    var randword = true;
+    let i = 1;
+    let randword = true;
+    let currentword;
     while (i < maxlength) {
       if (randword) {
-        var currentword = words[randInt(0, words.length)];
+        currentword = words[randInt(0, words.length)];
         randword = false;
       }
       else {

@@ -6,7 +6,7 @@ var Chain = Markov.Chain;
 var cli = new cliJS();
 cli.setupInterface();
 
-var markov = new Markov();
+var markov = new Markov(cli);
 
 var token = process.argv[2];
 if (token === null || token === '') {
@@ -47,6 +47,18 @@ tg.addCommandListener("markovclear", function (message, args, bot) {
 tg.initTelegram(token)
   .then(function () {
     cli.log(JSON.stringify(tg.getBotInformation(), null, 2));
+
+    cli.setOnExit(async function(){
+      await markov._getStorage().saveAll();
+    });
+
+    process.on('SIGINT',async ()=>{
+      cli.exit(0);
+    });
+
+    process.on('SIGTERM', async()=>{
+      cli.exit(0);
+    });
 
     tg.on('message', function (message,bot) {
       if (message.text) {

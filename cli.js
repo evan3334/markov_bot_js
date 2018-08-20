@@ -10,6 +10,10 @@ module.exports = function cli() {
   var lastTime = new Date(0);
 
   var firstTime = true;
+
+  let exitFunc;
+
+
   this.setupInterface = function (readlineInstance) {
     var rl;
     if (readlineInstance && readlineInstance instanceof readline.Interface) {
@@ -64,6 +68,12 @@ module.exports = function cli() {
       };
     }
     return rl;
+  };
+
+  this.setOnExit = function setOnExit(exitFunction){
+    if(typeof exitFunction === "function"){
+      exitFunc = exitFunction;
+    }
   };
 
   this.setupCommandListener = function (rl, listener, deleteOld) {
@@ -137,6 +147,7 @@ module.exports = function cli() {
 
   //object holding some preset logging levels and their formatted prefixes
   this.levels = {
+    debug: "DEBUG".bold.gray,
     info: "INFO".bold.green,
     warn: "WARN".bold.yellow,
     err: "ERROR".bold.red
@@ -168,6 +179,10 @@ module.exports = function cli() {
     lastTime = currentTime;
   };
 
+  this.debug = function(msg){
+    this.log(msg, this.levels.debug);
+  };
+
   this.err = function(msg)
   {
     this.log(msg, this.levels.err);
@@ -192,10 +207,25 @@ module.exports = function cli() {
       //set the log level to "INFO"
       level = this.levels.info;
     }
-    //output the log message, including the status code
-    this.log("Exiting... (Code: " + code + ")", level);
-    //actually exit the program, returning the status code
-    process.exit(code);
+    this.log("Preparing to exit... (Code: "+code+")", level);
+
+    if(exitFunc !== null){
+      let ret = exitFunc();
+      if(ret instanceof Promise){
+        ret.then(() => {
+          //output the log message, including the status code
+          this.log("Exiting... (Code: " + code + ")", level);
+          //actually exit the program, returning the status code
+          process.exit(code);
+        });
+      }
+      else{
+        //output the log message, including the status code
+        this.log("Exiting... (Code: " + code + ")", level);
+        //actually exit the program, returning the status code
+        process.exit(code);
+      }
+    }
   };
 };
 
