@@ -140,7 +140,11 @@ module.exports = function storage(cliInstance) {
     if (index == null) {
       //chat is not in the cache, let's load it
       //we can just return the loaded chat, it's already in the cache
-      return await loadChat(chat_id).data;
+      let chatObj = await loadChat(chat_id);
+      cli.debug("Successfully loaded chat "+chat_id);
+      cli.debug("readChat() will now return the following: ");
+      cli.debug(JSON.stringify(chatObj.data));
+      return chatObj.data;
     }
     else {
       //chat is already in the cache, let's pull it out and return it
@@ -170,7 +174,7 @@ module.exports = function storage(cliInstance) {
   async function findChatIndex(chat_id) {
     for (let i = 0; i < cache.length; i++) {
       let chat = cache[i];
-      if (chat.id === chat_id) {
+      if (chat.id == chat_id) {
         return i;
       }
     }
@@ -196,6 +200,7 @@ module.exports = function storage(cliInstance) {
     let path = dataDirectory + chatFilePrefix + chat_id + ".json";
     await createChatFile(chat_id);
     try {
+      cli.debug("Reading "+path+" ...");
       let fileContents = fs.readFileSync(path, 'utf8');
       return JSON.parse(fileContents);
     }
@@ -207,6 +212,7 @@ module.exports = function storage(cliInstance) {
   }
 
   async function cleanCache() {
+    cli.debug("Cleaning cache...");
     //check if the cache is too full
     while (cache.length > MAX_CHATS_IN_CACHE) {
       //unload the first item in the cache (items are First In, Last Out, so the first item is the least recently loaded)
@@ -236,6 +242,7 @@ module.exports = function storage(cliInstance) {
     //check if chat is already in cache
     let index = await findChatIndex(chat_id);
     if (index != null) {
+      cli.debug("chat already in cache, removing...");
       //if chat is already in cache, remove it; when loading, disk contents take priority
       cache.splice(index, 1);
     }
@@ -246,12 +253,16 @@ module.exports = function storage(cliInstance) {
       id: chat_id,
       data: data
     };
+    cli.debug("Read the following data: ");
+    cli.debug(JSON.stringify(chatObj));
     cache.push(chatObj);
     //start cleaning up the cache
     cleanCache().catch((e) => {
       cli.err("Something went wrong cleaning the cache");
       cli.err(e.stack);
     });
+    cli.debug("About to return the following: ");
+    cli.debug(JSON.stringify(chatObj));
     //return the chat as well
     return chatObj;
   }
@@ -259,12 +270,15 @@ module.exports = function storage(cliInstance) {
   this.saveAll = async function saveAll() {
     cli.log("Saving all chats...");
     cli.debug("Cache contents:");
-    cli.debug(cache);
+    cli.debug(JSON.stringify(cache));
     let total = cache.length;
-    for (let i = 0; i < total; i++) {
-      let chat = cache[i];
+    let i = 0;
+    while(cache.length > 0){
+      let chat = cache[0];
+      cli.debug("Keys of cache object: "+Object.keys(chat));
       cli.log("Saving chat " + chat.id + " (" + (i + 1) + " of " + total + ")");
       await unloadChat(chat.id);
+      i++;
     }
     cli.log("Saved all chats");
   }

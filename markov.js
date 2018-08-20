@@ -37,10 +37,13 @@ module.exports = function Markov(cliInstance) {
   //will look up, load, and then return a Chain given a chat_id.
   this.getChainForChat = function getChainForChat(chat_id) {
     return new Promise(function (fulfill, reject) {
+      cli.debug("asking for chain for chat "+chat_id);
       //read the chat file for the ID
       storage.readChat(chat_id).then(function (contents) {
         //create a chain based on the contents
+        cli.debug("received contents "+JSON.stringify(contents));
         let c = new module.exports.Chain(contents);
+        cli.debug("converted chain length: "+c.getWords().length);
         //return said chain. if the contents were invalid at all, c will simply be a blank chain.
         fulfill(c);
       }).catch(reject); //if any error is encountered, reject the promise that this function returns
@@ -178,7 +181,7 @@ module.exports.Chain = function Chain(object) {
   };
 
   this.getWords = function getWords() {
-    //just spit out the internal chain letiable's words array
+    //just spit out the internal chain variable's words array
     return chain.words;
   };
 

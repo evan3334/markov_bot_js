@@ -4,7 +4,7 @@ var util = require('util');
 //require the colors library, to make colored text in the console
 var colors = require('colors');
 
-module.exports = function cli() {
+module.exports = function cli(showDebug) {
   //variable to hold the last time a message was sent.
   //used to determine whether the full date should be sent - if only the time is different and not the day then we won't waste space
   var lastTime = new Date(0);
@@ -12,7 +12,6 @@ module.exports = function cli() {
   var firstTime = true;
 
   let exitFunc;
-
 
   this.setupInterface = function (readlineInstance) {
     var rl;
@@ -155,6 +154,10 @@ module.exports = function cli() {
 
   //function to output log messages to the console
   this.log = function (msg, level) {
+    if(level === this.levels.debug && !showDebug){
+      return;
+    }
+
     //if no level is provided
     if ((level === null) || (level === undefined) || (level.trim() === "")) {
       //level is automatically INFO

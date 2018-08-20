@@ -3,7 +3,9 @@ var telegram = require('./telegram.js');
 var Markov = require('./markov.js');
 var Chain = Markov.Chain;
 
-var cli = new cliJS();
+const debug = true;
+
+var cli = new cliJS(debug);
 cli.setupInterface();
 
 var markov = new Markov(cli);
@@ -17,6 +19,7 @@ if (token === null || token === '') {
 
 var tg = new telegram(cli);
 tg.addCommandListener("markov", function (message, args, bot) {
+  cli.log("/markov command executed in chat "+cli.getChatFormat(message.chat));
   var msg;
   markov.getChainForChat(message.chat.id)
     .then(function (chain) {
