@@ -1,20 +1,20 @@
-var readline = require('readline');
-var util = require('util');
+let readline = require('readline');
+let util = require('util');
 
 //require the colors library, to make colored text in the console
-var colors = require('colors');
+let colors = require('colors');
 
 module.exports = function cli(showDebug) {
-  //variable to hold the last time a message was sent.
+  //letiable to hold the last time a message was sent.
   //used to determine whether the full date should be sent - if only the time is different and not the day then we won't waste space
-  var lastTime = new Date(0);
+  let lastTime = new Date(0);
 
-  var firstTime = true;
+  let firstTime = true;
 
   let exitFunc;
 
   this.setupInterface = function (readlineInstance) {
-    var rl;
+    let rl;
     if (readlineInstance && readlineInstance instanceof readline.Interface) {
       rl = readlineInstance;
     }
@@ -41,9 +41,9 @@ module.exports = function cli(showDebug) {
     //make sure we don't do this stuff unless this program is running in a TTY, if it's not running in TTY
     // then that causes some serious issues (no escape sequences work and some functions do not exist)
     if (process.isTTY) {
-      var fu = function (type, args) {
-        var t = Math.ceil((rl.line.length + 3) / process.stdout.columns);
-        var text = util.format.apply(console, args);
+      let fu = function (type, args) {
+        let t = Math.ceil((rl.line.length + 3) / process.stdout.columns);
+        let text = util.format.apply(console, args);
         rl.output.write("\n\x1B[" + t + "A\x1B[0J");
         rl.output.write(text + "\n");
         rl.output.write(new Array(t).join("\n\x1B[E"));
@@ -118,7 +118,7 @@ module.exports = function cli(showDebug) {
 
   this.getChatFormat = function(chat)
   {
-    var output = "";
+    let output = "";
     if(chat.type)
     {
       switch(chat.type)
@@ -163,8 +163,8 @@ module.exports = function cli(showDebug) {
       //level is automatically INFO
       level = this.levels.info;
     }
-    //variable to hold the current time
-    var currentTime = time();
+    //letiable to hold the current time
+    let currentTime = time();
     //output the message, formatting the time string based on last time and current time
     if(level === this.levels.err)
     {
@@ -198,8 +198,8 @@ module.exports = function cli(showDebug) {
 
   //function to exit and display a log message based on the status code
   this.exit = function (code) {
-    //variable to hold the log level
-    var level = "";
+    //letiable to hold the log level
+    let level = "";
     //if the exit status code is greater than zero (error occurred)
     if (code > 0) {
       //set the log level to "ERROR"
@@ -251,14 +251,14 @@ function checkDateDiff(time1, time2) {
 
 //returns a formatted time string. Decides whether to include the date based on whether the dates of "now" and "last" are different.
 function timefmt(now, last) {
-  //variable to hold the current time, formatted as YYYY-MM-DDTHH:MM:SS.mmmZ
-  var nowstr = now.toJSON();
-  //variable to hold the output string, now empty
-  var outstr = "";
-  //variable to hold the current date as a string. uses regular expression to match everything before the "T"
-  var datestr = nowstr.match(/([0-9,-]+)T/)[1].cyan;
-  //variable to hold the current time as a string. uses regular expression to match everything between the "T" and the "Z"
-  var timestr = nowstr.match(/T([0-9,\:,\.]+)Z/)[1].bold.blue;
+  //letiable to hold the current time, formatted as YYYY-MM-DDTHH:MM:SS.mmmZ
+  let nowstr = now.toJSON();
+  //letiable to hold the output string, now empty
+  let outstr = "";
+  //letiable to hold the current date as a string. uses regular expression to match everything before the "T"
+  let datestr = nowstr.match(/([0-9,-]+)T/)[1].cyan;
+  //letiable to hold the current time as a string. uses regular expression to match everything between the "T" and the "Z"
+  let timestr = nowstr.match(/T([0-9,\:,\.]+)Z/)[1].bold.blue;
   //checks if the dates are different
   if (last && checkDateDiff(last, now)) {
     //assign the date string and a space to the output

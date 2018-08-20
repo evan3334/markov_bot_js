@@ -1,11 +1,11 @@
-var promise = require('promise');
+let promise = require('promise');
 process.env.NTBA_FIX_319 = true;
-var TelegramBot = require('node-telegram-bot-api');
+let TelegramBot = require('node-telegram-bot-api');
 TelegramBot.Promise = promise;
-var cliJS = require('./cli.js');
+let cliJS = require('./cli.js');
 
 module.exports = function telegram(cliInstance) {
-  var cli;
+  let cli;
   if (!cliInstance || !(cliInstance instanceof cliJS)) {
     throw new Error('cliInstance must be a valid instance of cli.js');
   }
@@ -13,12 +13,12 @@ module.exports = function telegram(cliInstance) {
     cli = cliInstance;
   }
 
-  var bot = {};
-  var initialized = false;
-  var me = {};
-  var messageEvents = [];
+  let bot = {};
+  let initialized = false;
+  let me = {};
+  let messageEvents = [];
 
-  var commands = [];
+  let commands = [];
 
   this.initTelegram = function initTelegram(token, options) {
     return new promise(function (fulfill, reject) {
@@ -71,9 +71,9 @@ module.exports = function telegram(cliInstance) {
       }
       bot.getChatAdministrators(chat.id)
         .then(function (admins) {
-          var found = false;
-          for (var i in admins) {
-            var current = admins[i];
+          let found = false;
+          for (let i in admins) {
+            let current = admins[i];
             if (current.user.id === user_id) {
               found = true;
               break;
@@ -100,8 +100,8 @@ module.exports = function telegram(cliInstance) {
 
   function onMessage(msg) {
     if (!processCommands(msg)) {
-      for (var i in messageEvents) {
-        var event = messageEvents[i];
+      for (let i in messageEvents) {
+        let event = messageEvents[i];
         event(msg,bot);
       }
     }
@@ -109,8 +109,8 @@ module.exports = function telegram(cliInstance) {
 
   this.removeCommandListener = function (command) {
     command = command.toLowerCase();
-    for (var i = 0; i < commands.length; i++) {
-      var current = commands[i];
+    for (let i = 0; i < commands.length; i++) {
+      let current = commands[i];
       if (current.command === command) {
         commands.splice(i, 1);
         return true;
@@ -120,27 +120,27 @@ module.exports = function telegram(cliInstance) {
   };
 
   function processCommands(input) {
-    var messageText = input.text;
+    let messageText = input.text;
     //if there isn't any message text, it won't be processable and we should ignore it.
     if(!messageText){
       return false;
     }
-    var namePattern = "\\/.*@([a-z,A-Z,\\S]*)";
-    var nameRegex = new RegExp(namePattern);
+    let namePattern = "\\/.*@([a-z,A-Z,\\S]*)";
+    let nameRegex = new RegExp(namePattern);
     if (nameRegex.test(messageText)) {
       //this is a command with a bot name on it
-      var results = nameRegex.exec(messageText);
+      let results = nameRegex.exec(messageText);
       if (!(results[1] && me.username && results[1].toLowerCase() === me.username.toLowerCase())) {
         //it's not our name. return true so that nothing else processes this message.
         return true;
       }
     }
-    for (var i = 0; i < commands.length; i++) {
-      var currentCommand = commands[i];
-      var firstPart = messageText.split(" ")[0].split("@")[0];
+    for (let i = 0; i < commands.length; i++) {
+      let currentCommand = commands[i];
+      let firstPart = messageText.split(" ")[0].split("@")[0];
       if (firstPart==="/"+currentCommand.command) {
         if (currentCommand.listener && typeof currentCommand.listener === "function") {
-          var args = messageText.split(' ');
+          let args = messageText.split(' ');
           args.splice(0, 1);
           currentCommand.listener(input, args, bot);
           return true;

@@ -18,7 +18,7 @@ for (let i = 0; i < ALLOWABLE_UNICODE_CATEGORIES.length; i++) {
 
 module.exports = function Markov(cliInstance) {
 
-  var cli;
+  let cli;
   if (!cliInstance || !(cliInstance instanceof cliJS)) {
     throw new Error('cliInstance must be a valid instance of cli.js');
   }
@@ -181,7 +181,7 @@ module.exports.Chain = function Chain(object) {
   };
 
   this.getWords = function getWords() {
-    //just spit out the internal chain variable's words array
+    //just spit out the internal chain letiable's words array
     return chain.words;
   };
 
