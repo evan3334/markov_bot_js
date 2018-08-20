@@ -3,7 +3,7 @@ let telegram = require('./telegram.js');
 let Markov = require('./markov.js');
 let Chain = Markov.Chain;
 
-const debug = true;
+const debug = false;
 
 let cli = new cliJS(debug);
 cli.setupInterface();

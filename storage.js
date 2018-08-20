@@ -2,16 +2,13 @@ let fs = require('fs');
 let Promise = require('promise');
 let cliJS = require('./cli.js');
 
-/**
- * Forces garbage collection
- */
-function performGC() {
-  if (global.gc) {
-    global.gc();
-  }
-}
+
 
 const MAX_CHATS_IN_CACHE = 10;
+
+//garbage collection counter, this idea comes from the original Markov Bot by 39bit
+//thanks
+const UNLOADS_UNTIL_GC = 30;
 
 module.exports = function storage(cliInstance) {
   let cli;
@@ -25,9 +22,23 @@ module.exports = function storage(cliInstance) {
   //cache for holding chats so we aren't constantly writing to disk
   let cache = [];
 
+  let gcCounter = 0;
+
   let currentDirectory = process.cwd();
   let chatFilePrefix = "chat_";
   let dataDirectory = currentDirectory + "/markov2/";
+
+  /**
+   * Forces garbage collection
+   */
+  function performGC() {
+    if (global.gc) {
+      global.gc();
+    }
+    else{
+      cli.warn("Garbage collection is disabled, please run node with the --expose-gc argument");
+    }
+  }
 
   //TODO make async instead of explicitly returning Promise
   function checkDataDirectory() {
@@ -214,10 +225,13 @@ module.exports = function storage(cliInstance) {
   async function cleanCache() {
     cli.debug("Cleaning cache...");
     //check if the cache is too full
+    let numUnloaded = 0;
     while (cache.length > MAX_CHATS_IN_CACHE) {
       //unload the first item in the cache (items are First In, Last Out, so the first item is the least recently loaded)
       await unloadChat(cache[0].id);
+      numUnloaded++;
     }
+    cli.debug("Unloaded "+numUnloaded+" chats");
   }
 
   async function unloadChat(chat_id) {
@@ -233,6 +247,15 @@ module.exports = function storage(cliInstance) {
       } catch (e) {
         cli.err("Something went wrong saving file for chat " + chat_id);
         cli.err(e.stack);
+      }
+      if(gcCounter>=UNLOADS_UNTIL_GC){
+        cli.info("Performing garbage collection...");
+        performGC();
+        gcCounter = 0;
+        cli.info("Garbage collection finished");
+      }
+      else{
+        gcCounter++;
       }
     }
   }
