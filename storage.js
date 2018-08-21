@@ -127,7 +127,7 @@ module.exports = function storage(cliInstance) {
       createDataDirectory().then(function () {
         checkChatFilePerms(chat_id).then(fulfill).catch(function (err) {
           if (err.code === "ENOENT") {
-            fs.writeFile(path, JSON.stringify({words: []}, null, 2), 'utf8', function (err) {
+            fs.writeFile(path, JSON.stringify({words: []}), 'utf8', function (err) {
               if (err) {
                 reject(err);
               }
@@ -198,7 +198,7 @@ module.exports = function storage(cliInstance) {
     cli.debug("Saving to "+path);
     await createChatFile(chat_id);
     try {
-      fs.writeFileSync(path, JSON.stringify(contents, null, 2), 'utf8');
+      fs.writeFileSync(path, JSON.stringify(contents), 'utf8');
     }
     catch (e) {
       cli.err("Something went wrong saving file for chat " + chat_id);
