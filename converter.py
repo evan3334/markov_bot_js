@@ -87,5 +87,5 @@ except OSError as err:
     print("Something went wrong trying to access the output file! More details:")
     raise(err)
 
-json.dump(newobj,outfile)
+json.dump(newobj,outfile,separators=(',', ':'))
 print("\nDone")
