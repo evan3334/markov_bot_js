@@ -5,6 +5,8 @@ let cliJS = require('./cli.js');
 //maximum length for a word, we don't want someone to mess us up by giving us a million-letter word or something
 const MAX_WORD_LENGTH = 50;
 
+let gcli;
+
 module.exports = function Markov(cliInstance) {
 
   let cli;
@@ -13,6 +15,7 @@ module.exports = function Markov(cliInstance) {
   }
   else {
     cli = cliInstance;
+    gcli = cli;
   }
 
   //create a storage module instance for our use
@@ -30,11 +33,9 @@ module.exports = function Markov(cliInstance) {
       //read the chat file for the ID
       storage.readChat(chat_id).then(function (contents) {
         //create a chain based on the contents
-        cli.debug("received contents "+JSON.stringify(contents));
-        let c = new module.exports.Chain(contents);
-        cli.debug("converted chain length: "+c.getWords().length);
+        cli.debug("converted chain length: "+contents.getWords().length);
         //return said chain. if the contents were invalid at all, c will simply be a blank chain.
-        fulfill(c);
+        fulfill(contents);
       }).catch(reject); //if any error is encountered, reject the promise that this function returns
     });
   };
@@ -44,13 +45,14 @@ module.exports = function Markov(cliInstance) {
   this.saveChainForChat = function saveChainForChat(chat_id, chain) {
     return new Promise(function (fulfill, reject) {
       //write the chain object to a file
-      storage.saveChat(chat_id, chain.getChain()).then(fulfill).catch(reject);
+      storage.saveChat(chat_id, chain).then(fulfill).catch(reject);
     })
   }
 };
 
 module.exports.Chain = function Chain(object) {
   let chain = {};
+  let cli = gcli;
 
   chain.words = [];
   chain.probabilities = {};
@@ -165,6 +167,7 @@ module.exports.Chain = function Chain(object) {
 
 
   function validateObject(object) {
+    cli.debug("starting validateObject()");
     //set a variable that we may later change to 'false' if something wrong is detected
     let valid = true;
     //make sure what we've been passed is actually an object
@@ -188,6 +191,7 @@ module.exports.Chain = function Chain(object) {
           //after all this, if valid is still set, everything is ok. set the object to this Chain's internal chain variable.
           if (valid) {
             chain = object;
+            cli.debug("validateObject() finished");
           }
         }
       }
@@ -195,6 +199,7 @@ module.exports.Chain = function Chain(object) {
   }
 
   this.generateMessage = function generateMessage(maxlength) {
+    cli.debug("generateMessage() started");
     let getWordsFollowing = this.getWordsFollowing;
     let getUsageCount = this.getUsageCount;
 
@@ -235,6 +240,7 @@ module.exports.Chain = function Chain(object) {
     //if we don't have any words in the chain, don't do this generation process and instead warn the users
     if (this.isEmpty()) {
       message = "_Chain is empty! Start sending some messages!_";
+      cli.debug("generateMessage() finished");
       return message;
     }
     let i = 1;
@@ -265,6 +271,7 @@ module.exports.Chain = function Chain(object) {
     }
     //we have broken out of the loop, so we've either hit the maximum message length or an end-of-message condition has been randomly chosen.
     //we should now return the finished message, albeit with extra whitespace removed.
+    cli.debug("generateMessage() finished");
     return message.trim();
   }
 

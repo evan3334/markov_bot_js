@@ -2,15 +2,18 @@ let fs = require('fs');
 let Promise = require('promise');
 let cliJS = require('./cli.js');
 
-
-
 const MAX_CHATS_IN_CACHE = 10;
 
 //garbage collection counter, this idea comes from the original Markov Bot by 39bit
 //thanks
 const UNLOADS_UNTIL_GC = 30;
 
+//autosave interval in minutes
+const AUTOSAVE_INTERVAL = 15;
+
 module.exports = function storage(cliInstance) {
+  let Markov = require('./markov.js');
+  let Chain = Markov.Chain;
   let cli;
   if (!cliInstance || !(cliInstance instanceof cliJS)) {
     throw new Error('cliInstance must be a valid instance of cli.js');
@@ -24,9 +27,16 @@ module.exports = function storage(cliInstance) {
 
   let gcCounter = 0;
 
+
+
   let currentDirectory = process.cwd();
   let chatFilePrefix = "chat_";
   let dataDirectory = currentDirectory + "/markov2/";
+
+  setInterval(() => {
+    cli.info("Performing regular save of all chats... ");
+    this.saveAll(false);
+  }, AUTOSAVE_INTERVAL*60000);
 
   /**
    * Forces garbage collection
@@ -35,7 +45,7 @@ module.exports = function storage(cliInstance) {
     if (global.gc) {
       global.gc();
     }
-    else{
+    else {
       cli.warn("Garbage collection is disabled, please run node with the --expose-gc argument");
     }
   }
@@ -152,9 +162,7 @@ module.exports = function storage(cliInstance) {
       //chat is not in the cache, let's load it
       //we can just return the loaded chat, it's already in the cache
       let chatObj = await loadChat(chat_id);
-      cli.debug("Successfully loaded chat "+chat_id);
-      cli.debug("readChat() will now return the following: ");
-      cli.debug(JSON.stringify(chatObj.data));
+      cli.debug("Successfully loaded chat " + chat_id);
       return chatObj.data;
     }
     else {
@@ -194,8 +202,8 @@ module.exports = function storage(cliInstance) {
 
 
   async function writeChatFile(chat_id, contents) {
-    let path = dataDirectory + chatFilePrefix+ chat_id + ".json";
-    cli.debug("Saving to "+path);
+    let path = dataDirectory + chatFilePrefix + chat_id + ".json";
+    cli.debug("Saving to " + path);
     await createChatFile(chat_id);
     try {
       fs.writeFileSync(path, JSON.stringify(contents), 'utf8');
@@ -211,7 +219,7 @@ module.exports = function storage(cliInstance) {
     let path = dataDirectory + chatFilePrefix + chat_id + ".json";
     await createChatFile(chat_id);
     try {
-      cli.debug("Reading "+path+" ...");
+      cli.debug("Reading " + path + " ...");
       let fileContents = fs.readFileSync(path, 'utf8');
       return JSON.parse(fileContents);
     }
@@ -231,31 +239,41 @@ module.exports = function storage(cliInstance) {
       await unloadChat(cache[0].id);
       numUnloaded++;
     }
-    cli.debug("Unloaded "+numUnloaded+" chats");
+    cli.debug("Unloaded " + numUnloaded + " chats");
   }
 
   async function unloadChat(chat_id) {
     cli.debug("Unloading chat " + chat_id);
+    //save the chat to disk
+    await save(chat_id);
+    if (gcCounter >= UNLOADS_UNTIL_GC) {
+      cli.info("Performing garbage collection...");
+      performGC();
+      gcCounter = 0;
+      cli.info("Garbage collection finished");
+    }
+    else {
+      gcCounter++;
+    }
+  }
+
+  async function save(chat_id, unload = true) {
     //check if it's in the cache first
     let index = await findChatIndex(chat_id);
     if (index != null) {
       try {
+        //get the data from the Chain object
+        let data = cache[index].data.getChain();
         //save the chat to disk
-        await writeChatFile(cache[index].id, cache[index].data);
-        //remove the chat from the cache
-        cache.splice(index, 1);
-      } catch (e) {
+        await writeChatFile(cache[index].id, data);
+        if(unload) {
+          //remove the chat from the cache
+          cache.splice(index, 1);
+        }
+      }
+      catch (e) {
         cli.err("Something went wrong saving file for chat " + chat_id);
         cli.err(e.stack);
-      }
-      if(gcCounter>=UNLOADS_UNTIL_GC){
-        cli.info("Performing garbage collection...");
-        performGC();
-        gcCounter = 0;
-        cli.info("Garbage collection finished");
-      }
-      else{
-        gcCounter++;
       }
     }
   }
@@ -271,36 +289,39 @@ module.exports = function storage(cliInstance) {
     }
     //load chat from disk
     let data = await readChatFile(chat_id);
+
+    cli.debug("Typeof Chain: "+typeof Chain);
+
+    //create a Chain from the data
+    let chain = new Chain(data);
+
     //save chat to cache
     let chatObj = {
       id: chat_id,
-      data: data
+      data: chain
     };
-    cli.debug("Read the following data: ");
-    cli.debug(JSON.stringify(chatObj));
     cache.push(chatObj);
     //start cleaning up the cache
     cleanCache().catch((e) => {
       cli.err("Something went wrong cleaning the cache");
       cli.err(e.stack);
     });
-    cli.debug("About to return the following: ");
-    cli.debug(JSON.stringify(chatObj));
     //return the chat as well
     return chatObj;
   }
 
-  this.saveAll = async function saveAll() {
+  this.saveAll = async function saveAll(unload = true) {
     cli.log("Saving all chats...");
-    cli.debug("Cache contents:");
-    cli.debug(JSON.stringify(cache));
     let total = cache.length;
     let i = 0;
-    while(cache.length > 0){
+    while (cache.length > 0) {
       let chat = cache[0];
-      cli.debug("Keys of cache object: "+Object.keys(chat));
       cli.log("Saving chat " + chat.id + " (" + (i + 1) + " of " + total + ")");
-      await unloadChat(chat.id);
+      if(unload) {
+        await unloadChat(chat.id);
+      } else {
+        await save(chat.id, false);
+      }
       i++;
     }
     cli.log("Saved all chats");
