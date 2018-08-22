@@ -18,8 +18,18 @@ if (token === null || token === '') {
 }
 
 let tg = new telegram(cli);
+tg.addCommandListener("start", function (message, args,bot ){
+  cli.log("/start command executed by "+cli.getUserFormat(message.from)+" in "+cli.getChatFormat(message.chat));
+  let welcomeMsg = "Hi, I'm the Markov Chain bot!\n" +
+    "I can create messages based on Markov Chains, generated from the chat messages in this group.\n" +
+    "Basically, I read the messages in this group and when you run my `/markov` command, I'll use words in your messages that are more likely to follow each other and make a message out of it.\n"+
+    "(More on how that works [here](http://setosa.io/ev/markov-chains/).)\n\n" +
+    "My developer is @evan3334, and my code is open source and can be viewed [here](https://github.com/evan3334/markov_bot_js).\n" +
+    "You may want to visit @evanbotnews to see what's going on with my development or operating status.";
+  bot.sendMessage(message.chat.id, welcomeMsg, {parse_mode: "Markdown"});
+});
 tg.addCommandListener("markov", function (message, args, bot) {
-  cli.log("/markov command executed in chat "+cli.getChatFormat(message.chat));
+  cli.log("/markov command executed by "+cli.getUserFormat(message.from)+" in "+cli.getChatFormat(message.chat));
   let msg;
   markov.getChainForChat(message.chat.id)
     .then(function (chain) {
@@ -31,6 +41,7 @@ tg.addCommandListener("markov", function (message, args, bot) {
     });
 });
 tg.addCommandListener("markovclear", function (message, args, bot) {
+  cli.log("/markovclear command executed by "+cli.getUserFormat(message.from)+" in "+cli.getChatFormat(message.chat));
   tg.isAdmin(message.from.id,message.chat)
     .then(function(isAdmin){
       if (isAdmin) {
