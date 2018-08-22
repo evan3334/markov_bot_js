@@ -4,17 +4,6 @@ let cliJS = require('./cli.js');
 
 //maximum length for a word, we don't want someone to mess us up by giving us a million-letter word or something
 const MAX_WORD_LENGTH = 50;
-//helps make sure we don't get any weird stuff in our database like RTL characters; only letters, punctuation, and numbers are allowed
-const ALLOWABLE_UNICODE_CATEGORIES = ["Ll", "Lm", "Lo", "Lt", "Lu", "Nd", "Nl", "No", "Pc", "Pd", "Pe", "Pf", "Pi", "Po", "Ps"];
-
-//will be filled with Unicode category databases
-let categories = {};
-
-//get the category databases created by the unicode module
-for (let i = 0; i < ALLOWABLE_UNICODE_CATEGORIES.length; i++) {
-  let category = ALLOWABLE_UNICODE_CATEGORIES[i];
-  categories[category] = require('unicode/category/' + category);
-}
 
 module.exports = function Markov(cliInstance) {
 
@@ -84,40 +73,12 @@ module.exports.Chain = function Chain(object) {
     }
   };
 
-  function allowable(char) {
-    //make sure what we've got is only one character; this just uses the first letter of whatever was passed
-    char = char.substring(0, 1);
-    //get the character code, stuff is stored in the unicode databases based on character code
-    code = char.charCodeAt(0);
-    //check through all the allowable unicode categories
-    for (let i = 0; i < ALLOWABLE_UNICODE_CATEGORIES.length; i++) {
-      //if the character code is in the current category, return true. the character's allowable.
-      if (categories[ALLOWABLE_UNICODE_CATEGORIES[i]][code]) {
-        return true;
-      }
-    }
-    //if, after all this, we've reached this point, no category contained the character code. this character is not allowable.
-    return false;
-  }
-
-  function cleanWord(word) {
-    let chars = word.split('');
-    let output = '';
-    for (let i = 0; i < chars.length; i++) {
-      if (allowable(chars[i])) {
-        output += chars[i];
-      }
-    }
-    return output;
-  }
-
   this.addMessage = function addMessage(message) {
     if (message && typeof message === 'string') {
       let words = message.split(" ");
       for (let i = 0; i < words.length; i++) {
         let word = words[i];
         word = word.substring(0, MAX_WORD_LENGTH);
-        word = cleanWord(word);
         words[i] = word;
         this.addWord(word);
       }
@@ -181,7 +142,7 @@ module.exports.Chain = function Chain(object) {
   };
 
   this.getWords = function getWords() {
-    //just spit out the internal chain letiable's words array
+    //just spit out the internal chain variable's words array
     return chain.words;
   };
 
@@ -204,7 +165,7 @@ module.exports.Chain = function Chain(object) {
 
 
   function validateObject(object) {
-    //set a letiable that we may later change to 'false' if something wrong is detected
+    //set a variable that we may later change to 'false' if something wrong is detected
     let valid = true;
     //make sure what we've been passed is actually an object
     if (object && typeof object === 'object') {
@@ -224,7 +185,7 @@ module.exports.Chain = function Chain(object) {
               }
             }
           }
-          //after all this, if valid is still set, everything is ok. set the object to this Chain's internal chain letiable.
+          //after all this, if valid is still set, everything is ok. set the object to this Chain's internal chain variable.
           if (valid) {
             chain = object;
           }
@@ -234,7 +195,6 @@ module.exports.Chain = function Chain(object) {
   }
 
   this.generateMessage = function generateMessage(maxlength) {
-    let getProbability = this.getProbability;
     let getWordsFollowing = this.getWordsFollowing;
     let getUsageCount = this.getUsageCount;
 
@@ -247,7 +207,7 @@ module.exports.Chain = function Chain(object) {
       //instead, we're making a "bag"-like model, where words are placed into the "bag" multiple times depending on their usages.
       //words that are in the "bag" more times than others will have a greater chance of being picked.
       let bag = [];
-      //letiable to store all the words that have followed this word
+      //variable to store all the words that have followed this word
       let following = getWordsFollowing(word);
       //if no words have followed this word, return ""
       if (!following || following.length === 0) {
@@ -255,7 +215,7 @@ module.exports.Chain = function Chain(object) {
       }
       //for every word that has followed this word
       for (let i = 0; i < following.length; i++) {
-        //store it in a letiable
+        //store it in a variable
         let nextword = following[i];
         //get how many times it has been used after word
         let usages = getUsageCount(word, nextword);
@@ -279,7 +239,7 @@ module.exports.Chain = function Chain(object) {
     }
     let i = 1;
     let randword = true;
-    let currentword;
+    let currentword = "";
     while (i < maxlength) {
       if (randword) {
         currentword = words[randInt(0, words.length)];
